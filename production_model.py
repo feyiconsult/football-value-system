@@ -29,42 +29,52 @@ def send_email(subject, content):
         print(f"❌ Failed to send email: {e}")
 
 def fetch_live_matches():
-    """Fetches real-time soccer fixtures and odds from The Odds API."""
+    """Fetches real-time soccer fixtures and odds from The Odds API using correct endpoints."""
     if not ODDS_API_KEY:
         print("⚠️ ODDS_API_KEY is missing.")
         return []
 
-    # Example focusing on major soccer leagues (e.g., EPL, La Liga, Serie A, Bundesliga)
-    # You can expand sports keys as needed
-    sports = ['soccer_epl', 'soccer_spain_la_liga', 'soccer_italy_serie_a', 'soccer_germany_bundesliga']
+    # Comprehensive major soccer leagues keys for The Odds API
+    sports = [
+        'soccer_epl', 
+        'soccer_spain_la_liga', 
+        'soccer_italy_serie_a', 
+        'soccer_germany_bundesliga', 
+        'soccer_france_ligue_one'
+    ]
     all_fixtures = []
 
     now_utc = datetime.now(timezone.utc)
     target_date_str = now_utc.strftime("%Y-%m-%d")
+    print(f"🔍 Querying Odds API for date: {target_date_str} at current time {now_utc.strftime('%H:%M UTC')}...")
 
     for sport in sports:
-        url = f"https://api.the-odds-api.v4/sports/{sport}/odds/"
+        # Corrected domain endpoint for The Odds API
+        url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/"
         params = {
             'apiKey': ODDS_API_KEY,
-            'regions': 'eu',
+            'regions': 'eu,uk',
             'markets': 'h2h',
             'oddsFormat': 'decimal'
         }
         
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(url, params=params, timeout=15)
+            print(f"📡 API Response for {sport}: Status {response.status_code}")
+            
             if response.status_code == 200:
                 matches = response.json()
+                print(f"   -> Fetched {len(matches)} raw match items for {sport}.")
                 for match in matches:
                     commence_time = match.get('commence_time')
                     if commence_time:
                         kickoff_dt = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
-                        # Filter: Must kick off today AND be in the future relative to execution time
-                        if kickoff_dt.strftime("%Y-%m-%d") == target_date_str and kickoff_dt > now_utc:
+                        # Keep matches scheduled for today (even if already started or upcoming, or filter strictly by future)
+                        if kickoff_dt.strftime("%Y-%m-%d") == target_date_str:
                             match['parsed_kickoff'] = kickoff_dt
                             all_fixtures.append(match)
             else:
-                print(f"⚠️ API error for {sport}: {response.status_code}")
+                print(f"⚠️ API error for {sport}: {response.status_code} - {response.text}")
         except Exception as e:
             print(f"❌ Connection error fetching {sport}: {e}")
 
@@ -75,15 +85,13 @@ def run_pipeline():
     target_date = now_utc.strftime("%Y-%m-%d")
     
     print(f"🚀 Launching Live Dynamic Football Value Engine...")
-    print(f"⏱️ Execution Timestamp (UTC): {now_utc.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"📅 Target Match Date: {target_date}")
-
+    
     # Fetch real fixtures from API
     fixtures = fetch_live_matches()
-    print(f"⚽ Found {len(fixtures)} upcoming live match(es) for today.")
+    print(f"⚽ Found {len(fixtures)} total match(es) for today after filtering.")
 
     if not fixtures:
-        no_match_msg = f"No upcoming matches found for {target_date} after current time {now_utc.strftime('%H:%M UTC')}."
+        no_match_msg = f"No matches found for {target_date} from active API queries."
         print(no_match_msg)
         send_email(f"🎯 Value Slips [{target_date}] - No Matches", no_match_msg)
         return
@@ -91,34 +99,31 @@ def run_pipeline():
     # Sort fixtures by kickoff time
     fixtures = sorted(fixtures, key=lambda x: x['parsed_kickoff'])
 
-    # Categorize fixtures into slips based on odds/targets
     slip_1_bets = []
     slip_2_bets = []
     slip_3_bets = []
 
-    # Simple dynamic allocation logic based on available real fixtures
     for fixture in fixtures:
         home = fixture.get('home_team')
         away = fixture.get('away_team')
         sport_title = fixture.get('sport_title', 'Soccer')
         
-        # Extract bookmaker odds if available
         bookmakers = fixture.get('bookmakers', [])
-        odds_val = 1.50 # default fallback
+        odds_val = 1.60  # default fallback
         if bookmakers:
             markets = bookmakers[0].get('markets', [])
             for market in markets:
                 if market.get('key') == 'h2h':
                     outcomes = market.get('outcomes', [])
                     if outcomes:
-                        odds_val = outcomes[0].get('price', 1.50)
+                        odds_val = outcomes[0].get('price', 1.60)
 
         match_desc = f"- {sport_title} | {home} vs {away} | Odds: {odds_val}"
         
         # Distribute into odds brackets
-        if len(slip_1_bets) < 3 and odds_val <= 1.70:
+        if len(slip_1_bets) < 3 and odds_val <= 1.80:
             slip_1_bets.append(match_desc)
-        elif len(slip_2_bets) < 3 and 1.50 <= odds_val <= 2.20:
+        elif len(slip_2_bets) < 3 and 1.50 <= odds_val <= 2.50:
             slip_2_bets.append(match_desc)
         elif len(slip_3_bets) < 4:
             slip_3_bets.append(match_desc)
@@ -147,7 +152,6 @@ def run_pipeline():
 
     print(master_email_body)
 
-    # Save and send
     with open("daily_slips.txt", "w", encoding="utf-8") as f:
         f.write(master_email_body)
 
