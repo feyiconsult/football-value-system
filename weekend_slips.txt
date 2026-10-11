@@ -1,0 +1,21 @@
+def generate_accumulator_slip(value_matches, target_odds=20.0):
+    """
+    Selects top value bet signals and multiplies their odds to build 
+    a target accumulator slip matching your required text format.
+    """
+    selected_matches = []
+    current_total_odds = 1.0
+
+    for match in value_matches:
+        if current_total_odds < target_odds:
+            selected_matches.append(match)
+            current_total_odds *= match["Odds"]
+        else:
+            break
+
+    slip_text = "SLIP 1: DAILY VALUE (Target 20 odds)\n"
+    for m in selected_matches:
+        slip_text += f"- {m['League']} | {m['Home']} vs {m['Away']} | {m['Market']} | {m['Odds']:.2f}\n"
+
+    slip_text += f"- Total Odds: {current_total_odds:.2f}\n"
+    return slip_text
