@@ -4,7 +4,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timezone
 import requests
-import scipy.stats as stats
 
 # Import configuration variables from config.py
 from config import ODDS_API_KEY, EMAIL_SENDER, EMAIL_PASSWORD, EMAIL_RECEIVER
@@ -19,7 +18,6 @@ def send_email(subject, content):
     msg['From'] = EMAIL_SENDER
     msg['To'] = EMAIL_RECEIVER
     msg['Subject'] = subject
-
     msg.attach(MIMEText(content, 'plain', 'utf-8'))
 
     try:
@@ -30,94 +28,130 @@ def send_email(subject, content):
     except Exception as e:
         print(f"❌ Failed to send email: {e}")
 
+def fetch_live_matches():
+    """Fetches real-time soccer fixtures and odds from The Odds API."""
+    if not ODDS_API_KEY:
+        print("⚠️ ODDS_API_KEY is missing.")
+        return []
+
+    # Example focusing on major soccer leagues (e.g., EPL, La Liga, Serie A, Bundesliga)
+    # You can expand sports keys as needed
+    sports = ['soccer_epl', 'soccer_spain_la_liga', 'soccer_italy_serie_a', 'soccer_germany_bundesliga']
+    all_fixtures = []
+
+    now_utc = datetime.now(timezone.utc)
+    target_date_str = now_utc.strftime("%Y-%m-%d")
+
+    for sport in sports:
+        url = f"https://api.the-odds-api.v4/sports/{sport}/odds/"
+        params = {
+            'apiKey': ODDS_API_KEY,
+            'regions': 'eu',
+            'markets': 'h2h',
+            'oddsFormat': 'decimal'
+        }
+        
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                matches = response.json()
+                for match in matches:
+                    commence_time = match.get('commence_time')
+                    if commence_time:
+                        kickoff_dt = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
+                        # Filter: Must kick off today AND be in the future relative to execution time
+                        if kickoff_dt.strftime("%Y-%m-%d") == target_date_str and kickoff_dt > now_utc:
+                            match['parsed_kickoff'] = kickoff_dt
+                            all_fixtures.append(match)
+            else:
+                print(f"⚠️ API error for {sport}: {response.status_code}")
+        except Exception as e:
+            print(f"❌ Connection error fetching {sport}: {e}")
+
+    return all_fixtures
+
 def run_pipeline():
-    # Capture the exact moment of execution (handles both CRON and Manual triggers dynamically)
     now_utc = datetime.now(timezone.utc)
     target_date = now_utc.strftime("%Y-%m-%d")
     
-    print(f"🚀 Launching Dynamic Football Value Engine...")
+    print(f"🚀 Launching Live Dynamic Football Value Engine...")
     print(f"⏱️ Execution Timestamp (UTC): {now_utc.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"📅 Target Match Date: {target_date}")
 
-    csv_file_path = "live_weekend_value.csv"
-    slips_file_path = "daily_slips.txt"
+    # Fetch real fixtures from API
+    fixtures = fetch_live_matches()
+    print(f"⚽ Found {len(fixtures)} upcoming live match(es) for today.")
 
-    # --- Live API Match Validation Logic ---
-    # When fetching fixtures from your Odds API endpoint, filter them using:
-    # 
-    # valid_fixtures = []
-    # for match in raw_api_matches:
-    #     kickoff_str = match['commence_time'] # e.g. "2026-10-11T16:30:00Z"
-    #     kickoff_time = datetime.fromisoformat(kickoff_str.replace('Z', '+00:00'))
-    #     
-    #     # Rule: Must be in the future (not started yet) AND scheduled for today
-    #     if kickoff_time > now_utc and kickoff_time.strftime("%Y-%m-%d") == target_date:
-    #         valid_fixtures.append(match)
+    if not fixtures:
+        no_match_msg = f"No upcoming matches found for {target_date} after current time {now_utc.strftime('%H:%M UTC')}."
+        print(no_match_msg)
+        send_email(f"🎯 Value Slips [{target_date}] - No Matches", no_match_msg)
+        return
 
-    print(f"🛡️ Filtering out completed matches and selecting upcoming fixtures for today...")
+    # Sort fixtures by kickoff time
+    fixtures = sorted(fixtures, key=lambda x: x['parsed_kickoff'])
 
-    # --- Categorized Slip Generation ---
-    slip_1_content = (
-        "SLIP 1: DAILY 3 ODDS (Conservative Value)\n"
-        "- English Premier League | Arsenal vs Crystal Palace | Over 1.5 Goals | 1.30\n"
-        "- Spain La Liga | Real Madrid vs Getafe | Real Madrid to Win | 1.45\n"
-        "- Italy Serie A | Inter Milan vs Empoli | Inter Milan to Win | 1.60\n"
-        "Total Slip 1 Odds: 3.02\n"
-    )
+    # Categorize fixtures into slips based on odds/targets
+    slip_1_bets = []
+    slip_2_bets = []
+    slip_3_bets = []
 
-    slip_2_content = (
-        "SLIP 2: DAILY 5 ODDS (Moderate Accumulator)\n"
-        "- Germany Bundesliga | Bayern Munich vs Augsburg | Over 2.5 Goals | 1.50\n"
-        "- France Ligue 1 | PSG vs Nantes | PSG to Win & Over 1.5 | 1.85\n"
-        "- Spain La Liga | Real Betis vs CA Osasuna | Over 2.5 Goals | 1.61\n"
-        "Total Slip 2 Odds: 4.47\n"
-    )
+    # Simple dynamic allocation logic based on available real fixtures
+    for fixture in fixtures:
+        home = fixture.get('home_team')
+        away = fixture.get('away_team')
+        sport_title = fixture.get('sport_title', 'Soccer')
+        
+        # Extract bookmaker odds if available
+        bookmakers = fixture.get('bookmakers', [])
+        odds_val = 1.50 # default fallback
+        if bookmakers:
+            markets = bookmakers[0].get('markets', [])
+            for market in markets:
+                if market.get('key') == 'h2h':
+                    outcomes = market.get('outcomes', [])
+                    if outcomes:
+                        odds_val = outcomes[0].get('price', 1.50)
 
-    slip_3_content = (
-        "SLIP 3: DAILY 20 ODDS (High Value Rollover)\n"
-        "- Spain La Liga | Real Sociedad vs Deportivo La Coruña | Over 2.5 Goals | 2.43\n"
-        "- Spain La Liga | Real Racing Club de Santander vs Valencia | Over 2.5 Goals | 1.60\n"
-        "- Germany Bundesliga | SC Freiburg vs FC Schalke 04 | Over 2.5 Goals | 1.68\n"
-        "- Italy Serie A | Lecce vs Bologna | Over 2.5 Goals | 2.00\n"
-        "Total Slip 3 Odds: 21.03\n"
-    )
+        match_desc = f"- {sport_title} | {home} vs {away} | Odds: {odds_val}"
+        
+        # Distribute into odds brackets
+        if len(slip_1_bets) < 3 and odds_val <= 1.70:
+            slip_1_bets.append(match_desc)
+        elif len(slip_2_bets) < 3 and 1.50 <= odds_val <= 2.20:
+            slip_2_bets.append(match_desc)
+        elif len(slip_3_bets) < 4:
+            slip_3_bets.append(match_desc)
 
-    combined_total_odds = round(3.02 * 4.47 * 21.03, 2)
+    # Format Slips
+    slip_1_text = "SLIP 1: DAILY 3 ODDS (Conservative Value)\n" + ("\n".join(slip_1_bets) if slip_1_bets else "- No qualifying matches found") + "\n"
+    slip_2_text = "SLIP 2: DAILY 5 ODDS (Moderate Accumulator)\n" + ("\n".join(slip_2_bets) if slip_2_bets else "- No qualifying matches found") + "\n"
+    slip_3_text = "SLIP 3: DAILY 20 ODDS (High Value Rollover)\n" + ("\n".join(slip_3_bets) if slip_3_bets else "- No qualifying matches found") + "\n"
     
-    slip_4_content = (
-        f"SLIP 4: COMBINED MEGA SLIP (Slip 1 + Slip 2 + Slip 3)\n"
-        f"---------------------------------------------------\n"
-        f"Master ticket combining active verified selections.\n"
-        f"Combined Total Odds: {combined_total_odds}\n"
+    slip_4_text = (
+        "SLIP 4: COMBINED MEGA SLIP (Slip 1 + Slip 2 + Slip 3)\n"
+        "---------------------------------------------------\n"
+        "Combined Master Accumulator from verified live fixtures.\n"
     )
 
     master_email_body = (
         f"🎯 DAILY FOOTBALL VALUE SLIPS - {target_date}\n"
-        f"🕒 Generated at: {now_utc.strftime('%H:%M UTC')} (Manual/Scheduled Run)\n"
+        f"🕒 Generated at: {now_utc.strftime('%H:%M UTC')} (Live API Scan)\n"
         f"===================================================\n\n"
-        f"{slip_1_content}\n"
-        f"---------------------------------------------------\n"
-        f"{slip_2_content}\n"
-        f"---------------------------------------------------\n"
-        f"{slip_3_content}\n"
-        f"---------------------------------------------------\n"
-        f"{slip_4_content}\n"
-        f"==================================================-\n"
-        f"Engine Status: Live Time-Filtered & Verified."
+        f"{slip_1_text}\n"
+        f"{slip_2_text}\n"
+        f"{slip_3_text}\n"
+        f"{slip_4_text}\n"
+        f"===================================================\n"
     )
 
     print(master_email_body)
 
-    # Save output to text file
-    with open(slips_file_path, "w", encoding="utf-8") as slips_file:
-        slips_file.write(master_email_body)
+    # Save and send
+    with open("daily_slips.txt", "w", encoding="utf-8") as f:
+        f.write(master_email_body)
 
-    with open(csv_file_path, "w", encoding="utf-8") as csv_file:
-        csv_file.write("SlipCategory,Match,Market,Odds\n")
-
-    # Dispatch email
-    email_subject = f"🎯 4-Slip Value Package [{target_date}] - Manual Run"
-    send_email(email_subject, master_email_body)
+    send_email(f"🎯 Live 4-Slip Value Package [{target_date}]", master_email_body)
 
 if __name__ == "__main__":
     run_pipeline()
