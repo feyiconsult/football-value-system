@@ -187,7 +187,7 @@ def run_pipeline():
 
     # 1. Save CSV report to Desktop
     desktop = os.path.expanduser("~/Desktop")
-    file_path = os.path.join(desktop, "live_weekend_value.csv")
+    file_path = "live_weekend_value.csv"
     with open(file_path, "w", encoding="utf-8") as file:
         file.write("\n".join(csv_rows))
 
