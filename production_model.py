@@ -35,7 +35,6 @@ def fetch_diverse_european_matches():
         print("⚠️ ODDS_API_KEY is missing.")
         return []
 
-    # Expanded diverse European leagues
     sports = [
         'soccer_epl', 
         'soccer_spain_la_liga', 
@@ -77,7 +76,7 @@ def fetch_diverse_european_matches():
 
     return all_fixtures
 
-def evaluate_poisson_markets(home_lambda, away_lambda, home_price, away_price, max_goals=6):
+def evaluate_poisson_markets(home_lambda, away_lambda, max_goals=6):
     """Calculates probabilities for Straight Win, Over 2.5, and BTTS."""
     home_win_prob = 0
     over_25_prob = 0
@@ -137,69 +136,88 @@ def run_pipeline():
         home_price = h2h_odds[home]
         away_price = h2h_odds[away]
 
-        # Expected goals heuristic based on odds pricing
         home_lambda = max(1.1, 2.7 / (home_price ** 0.45))
         away_lambda = max(0.9, 2.1 / (away_price ** 0.45))
 
-        hw_prob, o25_prob, btts_prob = evaluate_poisson_markets(home_lambda, away_lambda, home_price, away_price)
+        hw_prob, o25_prob, btts_prob = evaluate_poisson_markets(home_lambda, away_lambda)
 
-        # 1. Evaluate Straight Win (High probability home win)
+        # 1. Straight Win
         if hw_prob > 0.60 and 1.35 <= home_price <= 2.20:
             qualified_bets.append({
                 'market_type': 'Straight Win',
-                'desc': f"- {sport_title} | {home} vs {away} | {home} to Win",
+                'desc': f"{sport_title} | {home} vs {away} | {home} to Win",
                 'odds': home_price,
                 'score': hw_prob
             })
 
-        # 2. Evaluate Over 2.5 Goals
-        over_price = totals_odds.get('Over', 1.85)
+        # 2. Over 2.5 Goals
+        over_price = totals_odds.get('Over', 0)
         if o25_prob > 0.58 and 1.50 <= over_price <= 2.20:
             qualified_bets.append({
                 'market_type': 'Over 2.5 Goals',
-                'desc': f"- {sport_title} | {home} vs {away} | Over 2.5 Goals",
+                'desc': f"{sport_title} | {home} vs {away} | Over 2.5 Goals",
                 'odds': over_price,
                 'score': o25_prob
             })
 
-        # 3. Evaluate BTTS (Both Teams to Score)
-        if btts_prob > 0.58 and 1.55 <= (1 / btts_prob) <= 2.20:
+        # 3. BTTS
+        if btts_prob > 0.58:
             btts_odds = round(1 / btts_prob, 2)
-            qualified_bets.append({
-                'market_type': 'BTTS',
-                'desc': f"- {sport_title} | {home} vs {away} | BTTS (Yes)",
-                'odds': btts_odds,
-                'score': btts_prob
-            })
+            if 1.55 <= btts_odds <= 2.20:
+                qualified_bets.append({
+                    'market_type': 'BTTS',
+                    'desc': f"{sport_title} | {home} vs {away} | BTTS (Yes)",
+                    'odds': btts_odds,
+                    'score': btts_prob
+                })
 
-    # Sort selections by statistical confidence score
     qualified_bets = sorted(qualified_bets, key=lambda x: x['score'], reverse=True)
 
     slip_1_bets = []
     slip_2_bets = []
     slip_3_bets = []
 
+    # Distribute selections into slips avoiding duplicate matches if possible
+    used_matches = set()
     for bet in qualified_bets:
+        match_key = bet['desc'].split('|')[1].strip()
+        if match_key in used_matches:
+            continue
+            
         price = bet['odds']
-        formatted_entry = f"{bet['desc']} ({bet['market_type']}) | Odds: {price}"
-        
         if len(slip_1_bets) < 3 and price <= 1.80:
-            slip_1_bets.append(formatted_entry)
+            slip_1_bets.append(bet)
+            used_matches.add(match_key)
         elif len(slip_2_bets) < 3 and 1.50 <= price <= 2.40:
-            slip_2_bets.append(formatted_entry)
+            slip_2_bets.append(bet)
+            used_matches.add(match_key)
         elif len(slip_3_bets) < 4 and 1.80 <= price <= 3.50:
-            slip_3_bets.append(formatted_entry)
+            slip_3_bets.append(bet)
+            used_matches.add(match_key)
 
-    # Format Slips
-    slip_1_text = "SLIP 1: DAILY 3 ODDS (Conservative Value)\n" + ("\n".join([f"- {b}" for b in slip_1_bets]) if slip_1_bets else "- No qualifying matches found") + "\n"
-    slip_2_text = "SLIP 2: DAILY 5 ODDS (Moderate Accumulator)\n" + ("\n".join([f"- {b}" for b in slip_2_bets]) if slip_2_bets else "- No qualifying matches found") + "\n"
-    slip_3_text = "SLIP 3: DAILY 20 ODDS (High Value Rollover)\n" + ("\n".join([f"- {b}" for b in slip_3_bets]) if slip_3_bets else "- No qualifying matches found") + "\n"
-    
-    slip_4_text = (
-        "SLIP 4: COMBINED MEGA SLIP (Slip 1 + Slip 2 + Slip 3)\n"
-        "---------------------------------------------------\n"
-        "Master accumulator combining diverse European league selections.\n"
-    )
+    # Helper function to format slip lines and calculate total cumulative odds
+    def format_slip_items(bets_list):
+        if not bets_list:
+            return "- No qualifying matches found\n", 1.0
+        lines = []
+        cumulative = 1.0
+        for b in bets_list:
+            lines.append(f"- {b['desc']} ({b['market_type']}) | Odds: {b['odds']}")
+            cumulative *= b['odds']
+        return "\n".join(lines) + f"\nTotal Slip Odds: {round(cumulative, 2)}\n", cumulative
+
+    slip_1_str, odds_1 = format_slip_items(slip_1_bets)
+    slip_2_str, odds_2 = format_slip_items(slip_2_bets)
+    slip_3_str, odds_3 = format_slip_items(slip_3_bets)
+
+    # Slip 4 combines all selections from Slips 1, 2, and 3
+    combined_bets = slip_1_bets + slip_2_bets + slip_3_bets
+    slip_4_str, combined_total_odds = format_slip_items(combined_bets)
+
+    slip_1_text = f"SLIP 1: DAILY 3 ODDS (Conservative Value)\n{slip_1_str}"
+    slip_2_text = f"SLIP 2: DAILY 5 ODDS (Moderate Accumulator)\n{slip_2_str}"
+    slip_3_text = f"SLIP 3: DAILY 20 ODDS (High Value Rollover)\n{slip_3_str}"
+    slip_4_text = f"SLIP 4: COMBINED MEGA SLIP (Slip 1 + Slip 2 + Slip 3)\n---------------------------------------------------\n{slip_4_str}"
 
     master_email_body = (
         f"🎯 DIVERSE EUROPEAN VALUE SLIPS - {target_date}\n"
