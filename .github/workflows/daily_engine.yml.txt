@@ -1,0 +1,32 @@
+# .github/workflows/daily_engine.yml
+name: Daily Football Value Engine
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # Runs every day at 5:00 AM UTC (6:00 AM WAT)
+  workflow_dispatch:      # Allows manual trigger from GitHub anytime
+
+jobs:
+  run-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests scipy
+
+      - name: Run Production Model
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        run: |
+          python production_model.py
