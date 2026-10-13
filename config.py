@@ -4,9 +4,9 @@ import os
 # Secrets will be fetched from GitHub Actions secrets in the cloud,
 # or fall back to your local environment variables.
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "bfad19f9fc74e5f67cfc49ca4408d3a7")
-EMAIL_SENDER = os.getenv("EMAIL_SENDER", "")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
-EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER", "")
+EMAIL_SENDER = os.getenv("feyiconsult@gmail.com", "")
+EMAIL_PASSWORD = os.getenv("edtgnzujycosfvpw", "")
+EMAIL_RECEIVER = os.getenv("feyiconsult@gmail.com", "")
 
 GLOBAL_SETTINGS = {
     "min_over_prob": 58.0,
@@ -52,3 +52,4 @@ WEEK_ROUND_LEAGUES = {
     "soccer_poland_ekstraklasa": "Poland Ekstraklasa",
     "soccer_switzerland_superleague": "Switzerland Super League"
 }
+TARGET_LEAGUES = WEEK_ROUND_LEAGUES
