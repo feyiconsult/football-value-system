@@ -4,9 +4,9 @@ import os
 # Secrets will be fetched from GitHub Actions secrets in the cloud,
 # or fall back to your local environment variables.
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "bfad19f9fc74e5f67cfc49ca4408d3a7")
-EMAIL_SENDER = os.getenv("feyiconsult@gmail.com", "")
-EMAIL_PASSWORD = os.getenv("edtgnzujycosfvpw", "")
-EMAIL_RECEIVER = os.getenv("feyiconsult@gmail.com", "")
+EMAIL_SENDER = os.getenv("EMAIL_SENDER", "feyiconsult@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "edtgnzujycosfvpw")
+EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER", "feyiconsult@gmail.com")
 
 GLOBAL_SETTINGS = {
     "min_over_prob": 58.0,
