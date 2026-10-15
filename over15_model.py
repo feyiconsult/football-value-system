@@ -1,9 +1,11 @@
-import os
+import os 
+from twilio.rest import Client
 import requests
 import smtplib
 from datetime import datetime, timezone, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
 
 from config import (
     ODDS_API_KEY, 
@@ -155,6 +157,36 @@ def send_email(html_body):
         print("📧 Dual Accumulator report successfully sent to your email!")
     except Exception as e:
         print(f"❌ Failed to send email: {e}")
+
+        def send_whatsapp_slip(message_body):
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    to_number = os.getenv("TWILIO_WHATSAPP_TO")
+    from_number = "whatsapp:+14155238886"  # Default Twilio Sandbox Number
+
+    if not account_sid or not auth_token or not to_number:
+        print("⚠️ WhatsApp credentials missing. Skipping WhatsApp dispatch.")
+        return
+
+    try:
+        client = Client(account_sid, auth_token)
+        message = client.messages.create(
+            body=message_body,
+            from_=from_number,
+            to=to_number
+        )
+        print(f"✅ WhatsApp message dispatched! SID: {message.sid}")
+    except Exception as e:
+        print(f"❌ Failed to send WhatsApp message: {e}")
+
+        # Example of where to hook it in your main block:
+slip_summary_text = f"⚽ The Grinder Daily Slips Generated!\n\nSlip 1 Total Odds: {slip1_odds}\nSlip 2 Total Odds: {slip2_odds}"
+
+# Send via Email (existing code)
+send_email_report(slip_summary_text)
+
+# Send via WhatsApp (new addition)
+send_whatsapp_slip(slip_summary_text)
 
 def run_pipeline():
     print("🚀 Launching 'The Grinder' Dual Accumulator Engine...")

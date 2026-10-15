@@ -1,0 +1,41 @@
+Slip_Type,Date,League,Home_Team,Away_Team,Market,Bookie_Price,System_Prob
+OVER_2.5_SLIP,2026-10-13,UEFA Champions League,Viking FK,Bayern Munich,Over 2.5,1.14,83.8%
+OVER_2.5_SLIP,2026-10-17,Germany Bundesliga,Bayern Munich,RB Leipzig,Over 2.5,1.15,82.7%
+OVER_2.5_SLIP,2026-10-13,UEFA Champions League,Galatasaray,Barcelona,Over 2.5,1.19,80.1%
+OVER_2.5_SLIP,2026-10-17,Netherlands Eredivisie,ADO Den Haag,PSV Eindhoven,Over 2.5,1.22,76.2%
+OVER_2.5_SLIP,2026-10-13,UEFA Champions League,RB Leipzig,PSV Eindhoven,Over 2.5,1.25,76.2%
+OVER_2.5_SLIP,2026-10-17,Spain La Liga,Real Betis,Barcelona,Over 2.5,1.25,75.5%
+OVER_2.5_SLIP,2026-10-17,Norway Eliteserien,HamKam,Bodø/Glimt,Over 2.5,1.25,73.7%
+OVER_2.5_SLIP,2026-10-13,UEFA Champions League,Inter Milan,Club Brugge,Over 2.5,1.31,72.8%
+OVER_2.5_SLIP,2026-10-15,USA MLS,Nashville SC,Sporting Kansas City,Over 2.5,1.29,72.5%
+OVER_2.5_SLIP,2026-10-17,USA MLS,Atlanta United FC,Inter Miami CF,Over 2.5,1.31,71.9%
+OVER_2.5_SLIP,2026-10-17,Netherlands Eredivisie,SC Telstar,Feyenoord,Over 2.5,1.3,71.4%
+OVER_2.5_SLIP,2026-10-14,USA MLS,Inter Miami CF,New York City FC,Over 2.5,1.3,71.4%
+OVER_2.5_SLIP,2026-10-17,France Ligue 1,Strasbourg,Paris Saint Germain,Over 2.5,1.33,71.3%
+OVER_2.5_SLIP,2026-10-14,UEFA Champions League,ŠK Slovan Bratislava,VfB Stuttgart,Over 2.5,1.34,71.2%
+OVER_2.5_SLIP,2026-10-18,Netherlands Eredivisie,FC Twente Enschede,FC Utrecht,Over 2.5,1.33,70.0%
+OVER_2.5_SLIP,2026-10-17,USA MLS,Philadelphia Union,Charlotte FC,Over 2.5,1.35,70.0%
+OVER_2.5_SLIP,2026-10-17,USA MLS,Orlando City SC,D.C. United,Over 2.5,1.35,70.0%
+OVER_2.5_SLIP,2026-10-16,Germany Bundesliga,Eintracht Frankfurt,1. FC Köln,Over 2.5,1.36,69.5%
+OVER_2.5_SLIP,2026-10-15,UEFA Europa League,Bournemouth,SK Sturm Graz,Over 2.5,1.36,69.5%
+OVER_2.5_SLIP,2026-10-14,UEFA Champions League,LASK,Liverpool,Over 2.5,1.38,69.1%
+OVER_1.5_SLIP,2026-10-17,Germany Bundesliga,Bayern Munich,RB Leipzig,Over 1.5,1.13,96.0%
+OVER_1.5_SLIP,2026-10-13,UEFA Champions League,Galatasaray,Barcelona,Over 1.5,1.13,96.0%
+OVER_1.5_SLIP,2026-10-13,UEFA Champions League,Viking FK,Bayern Munich,Over 1.5,1.13,96.0%
+OVER_1.5_SLIP,2026-10-17,Netherlands Eredivisie,ADO Den Haag,PSV Eindhoven,Over 1.5,1.17,93.0%
+OVER_1.5_SLIP,2026-10-13,UEFA Champions League,RB Leipzig,PSV Eindhoven,Over 1.5,1.17,93.0%
+OVER_1.5_SLIP,2026-10-17,Spain La Liga,Real Betis,Barcelona,Over 1.5,1.18,92.1%
+OVER_1.5_SLIP,2026-10-17,Norway Eliteserien,HamKam,Bodø/Glimt,Over 1.5,1.21,89.9%
+OVER_1.5_SLIP,2026-10-13,UEFA Champions League,Inter Milan,Club Brugge,Over 1.5,1.22,88.8%
+OVER_1.5_SLIP,2026-10-15,USA MLS,Nashville SC,Sporting Kansas City,Over 1.5,1.23,88.5%
+OVER_1.5_SLIP,2026-10-17,USA MLS,Atlanta United FC,Inter Miami CF,Over 1.5,1.24,87.7%
+OVER_1.5_SLIP,2026-10-17,Netherlands Eredivisie,SC Telstar,Feyenoord,Over 1.5,1.25,87.1%
+OVER_1.5_SLIP,2026-10-14,USA MLS,Inter Miami CF,New York City FC,Over 1.5,1.25,87.1%
+OVER_1.5_SLIP,2026-10-17,France Ligue 1,Strasbourg,Paris Saint Germain,Over 1.5,1.25,87.0%
+OVER_1.5_SLIP,2026-10-14,UEFA Champions League,ŠK Slovan Bratislava,VfB Stuttgart,Over 1.5,1.25,86.9%
+OVER_1.5_SLIP,2026-10-18,Netherlands Eredivisie,FC Twente Enschede,FC Utrecht,Over 1.5,1.27,85.4%
+OVER_1.5_SLIP,2026-10-17,USA MLS,Philadelphia Union,Charlotte FC,Over 1.5,1.27,85.4%
+OVER_1.5_SLIP,2026-10-17,USA MLS,Orlando City SC,D.C. United,Over 1.5,1.27,85.4%
+OVER_1.5_SLIP,2026-10-16,Germany Bundesliga,Eintracht Frankfurt,1. FC Köln,Over 1.5,1.28,84.8%
+OVER_1.5_SLIP,2026-10-15,UEFA Europa League,Bournemouth,SK Sturm Graz,Over 1.5,1.28,84.8%
+OVER_1.5_SLIP,2026-10-14,UEFA Champions League,LASK,Liverpool,Over 1.5,1.29,84.3%
